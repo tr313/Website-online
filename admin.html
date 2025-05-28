@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard - Realtime + Voice</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at center, #0a0a0a 0%, #050505 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+      padding: 2.5rem;
+      border-radius: 16px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+      100% { transform: translateY(0px); }
+    }
+
+    h2 {
+      color: #00ffff;
+      margin-bottom: 1rem;
+      letter-spacing: 1px;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      outline: none;
+      background: rgba(0, 0, 0, 0.5);
+      color: #00ffff;
+    }
+
+    button {
+      background: #00ffff;
+      color: #111;
+      font-weight: bold;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background: #00c2c2;
+    }
+
+    #robot {
+      width: 80px;
+      margin-bottom: 1rem;
+      animation: float 5s ease-in-out infinite;
+    }
+
+    .error {
+      color: #ff4d4d;
+      margin-top: 0.5rem;
+    }
+
+    #dashboard {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      padding: 2rem;
+      background: linear-gradient(to bottom right, #000000, #111111);
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      border: 1px solid #333;
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #00ffff;
+      color: #000;
+    }
+
+    td {
+      color: #ddd;
+    }
+
+    .highlight {
+      animation: pulse 1s ease-out;
+    }
+
+    @keyframes pulse {
+      from { background-color: rgba(0, 255, 255, 0.2); }
+      to { background-color: transparent; }
+    }
+
+    #logout {
+      margin-top: 2rem;
+      background: #ff4d4d;
+      color: white;
+    }
+
+    #logout:hover {
+      background: #cc0000;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="login-box">
+    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712100.png" alt="Robot" id="robot" />
+    <h2>Admin Login</h2>
+    <input type="password" id="password" placeholder="Enter admin password" />
+    <button onclick="login()">Unlock</button>
+    <p class="error" id="error"></p>
+  </div>
+
+  <div id="dashboard">
+    <h1>📦 Order Management Console</h1>
+    <button id="logout" onclick="logout()">🚪 Logout</button>
+    <table id="orders-table">
+      <thead>
+        <tr><th>#</th><th>Product</th><th>Price</th><th>Qty</th><th>Total</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    let previousOrderCount = 0;
+
+    function login() {
+      const entered = document.getElementById("password").value;
+      if (entered === "Anjum313$$") {
+        document.getElementById("login-box").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        loadOrders(true);
+        setInterval(() => loadOrders(false), 10000);
+      } else {
+        document.getElementById("error").textContent = "❌ Incorrect password. Access denied.";
+      }
+    }
+
+    function logout() {
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("login-box").style.display = "block";
+      document.getElementById("password").value = "";
+    }
+
+    function speak(text) {
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.pitch = 1.1;
+      msg.rate = 1;
+      msg.volume = 1;
+      speechSynthesis.speak(msg);
+    }
+
+    function loadOrders(isInitial = false) {
+      fetch('/orders.json')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.querySelector('#orders-table tbody');
+          tbody.innerHTML = "";
+          let totalItems = 0;
+
+          data.forEach((order, index) => {
+            order.items.forEach(item => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.product}</td>
+                <td>$${item.price.toFixed(2)}</td>
+                <td>${item.quantity}</td>
+                <td>$${(item.price * item.quantity).toFixed(2)}</td>
+              `;
+              if (!isInitial && index >= previousOrderCount) {
+                row.classList.add('highlight');
+              }
+              tbody.appendChild(row);
+              totalItems++;
+            });
+          });
+
+          if (!isInitial && data.length > previousOrderCount) {
+            speak("New order received");
+          }
+
+          previousOrderCount = data.length;
+        });
+    }
+  </script>
+
+</body>
+</html>
